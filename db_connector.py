@@ -19,7 +19,15 @@ class AsyncDataBaseConnector:
         self.conn = sqlite3.connect(self.name)
         print(f"получено соединение к базе данных. Путь до неё: {self.name}")
 
-    def __check_subject(self, user_id: Any, subject: str) -> Union[None, int]:
+    async def __check_subject(self, user_id: Any, subject: str) -> Union[None, int]:
+        """
+        if count of subject names in db is 0, return None,
+        if him is 1 then return True,
+        if him > 1, then return 1
+        :param user_id:
+        :param subject:
+        :return:
+        """
         cursor = self.conn.cursor()
         try:
             subjects: list = [elem for elem in cursor.execute(
@@ -72,7 +80,7 @@ class AsyncDataBaseConnector:
 
     async def add_subject_to_user(self, user_id: Any, subject: str, scores: str = "") -> Union[None, int]:
         """
-        if error with adding or databse: return 1, else None
+        if error with adding or databse then return 1, else None
         :param user_id:
         :param subject:
         :param scores:
@@ -80,7 +88,7 @@ class AsyncDataBaseConnector:
         """
         cursor = self.conn.cursor()
         try:
-            subj_res = self.__check_subject(user_id=user_id, subject=subject)
+            subj_res = await self.__check_subject(user_id=user_id, subject=subject)
             if subj_res and type(subj_res) == bool:
                 cursor.execute(
                     f"""
@@ -112,14 +120,14 @@ class AsyncDataBaseConnector:
         """
         cursor = self.conn.cursor()
         try:
-            subj_res = self.__check_subject(user_id=user_id, subject=subject)
+            subj_res = await self.__check_subject(user_id=user_id, subject=subject)
             if subj_res and type(subj_res) == bool:
                 subjects: list = [elem for elem in cursor.execute(
                     f"""
                     SELECT * FROM {self.db_prefix}_{user_id}
                     WHERE subjects = {subject.lower()}
                     """
-                )]
+                )][0]
             else:
                 return 1
             '''
@@ -173,7 +181,7 @@ class AsyncDataBaseConnector:
                 SELECT * FROM {self.db_prefix}_{user_id}
                 WHERE subjects = {subject.lower()}
                 """
-            )]
+            )][0]
             '''
             subjects = cursor.execute(
                 f"""
@@ -233,15 +241,61 @@ class AsyncDataBaseConnector:
             )
         self.conn.commit()
 
-    async def now_score(self, user_id: Any, subject: str) -> None:
+    async def __calculate_scores(self, scores: str) -> float:
+        """
+        calculate average of scores
+        :param scores:
+        :return:
+        """
+        filtered_scores: list = str(
+            filter(
+                lambda string: str(string).isdigit(),
+                scores
+            )
+        ).split()
+        result: float = sum(
+            map(
+                lambda string: int(string),
+                filtered_scores
+            )
+        )/len(filtered_scores)
+        return result
+
+    async def now_score(self, user_id: Any, subject: str) -> float:
         cursor = self.conn.cursor()
         try:
-            subjects = cursor.execute(
+            subjects: Union[list, tuple] = [elem for elem in cursor.execute(
                 f"""
                 SELECT * FROM {self.db_prefix}_{user_id}
                 WHERE subjects = {subject.lower()}
                 """
+            )][0]
+        except sqlite3.OperationalError:
+            print(
+                (
+                    "что-то пошло не так с получением пользователя"
+                    f" {user_id} предмета {subject}"
+                )
             )
+        else:
+            if subjects:  # подразумевается, что оценки будут разделены пробелом
+                result: float = await self.__calculate_scores(scores=subjects[1])
+                # pass  # тут у меня уже заканчиваются силы над логикой бота Т_Т
+                # я понял, что сделать, во
+                return result
+            else:
+                print("то-то пошло не так с получением оценок")
+                return 0
+
+    async def predict_scores(self, user_id: Any, subject: str, predict_scores: str) -> float:
+        cursor = self.conn.cursor()
+        try:
+            subjects: Union[list, tuple] = [elem for elem in cursor.execute(
+                f"""
+                SELECT * FROM {self.db_prefix}_{user_id}
+                WHERE subjects = {subject.lower()}
+                """
+            )][0]
         except sqlite3.OperationalError:
             print(
                 (
@@ -251,4 +305,20 @@ class AsyncDataBaseConnector:
             )
         else:
             if subjects:
-                pass  # тут у меня уже заканчиваются силы над логикой бота Т_Т
+                result: float = await self.__calculate_scores(scores=subjects[1]+predict_scores)
+                return result
+            else:
+                print("то-то пошло не так с получением оценок")
+                return 0
+
+    async def all_subjects_with_scores_as_dict(self, user_id: Any) -> dict:
+        cursor = self.conn.cursor()
+        subjects: Union[list, tuple] = [elem for elem in cursor.execute(
+            f"""
+            SELECT * FROM {self.db_prefix}_{user_id}
+            """
+        )]
+        result: dict = {
+            key: self.__calculate_scores(value) for key, value in subjects
+        }
+        return result

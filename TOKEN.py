@@ -1,2 +1,2 @@
 # чтобы никто не коммуниздил мой токен...
-TOKEN = ''
+TOKEN = '1802203902:AAHH32xKzHAviOO0UkVW5iVZ58ISY1NPT5A'

@@ -17,7 +17,7 @@ class AsyncDataBaseConnector:
             except OSError:
                 pass
         self.conn = sqlite3.connect(self.name)
-        print(f"получено соединение к базе данных. Путь до неё: {self.name}")
+        print(f"[SQLite3] получено соединение к базе данных. Путь до неё: {self.name}")
 
     def __check_subject(self, user_id: Any, subject: str) -> Union[None, int]:
         cursor = self.conn.cursor()
@@ -29,7 +29,7 @@ class AsyncDataBaseConnector:
                 """
             )]
         except sqlite3.OperationalError:
-            print("ой, с базой данных что-то пошло не так")
+            print("[SQLite3] ой, с базой данных что-то пошло не так")
         else:
             if not subjects:
                 return
@@ -55,20 +55,16 @@ class AsyncDataBaseConnector:
                 """
             )
         except sqlite3.OperationalError:
-            print(
-                (
-                    f"таблица {self.db_prefix}_{user_id} "
+            print((
+                    f"[SQLite3] таблица {self.db_prefix}_{user_id} "
                     "в базе данных {self.name} уже была создана"
-                )
-            )
+            ))
             return 1
         self.conn.commit()
-        print(
-            (
-                f"создана новая таблица {self.db_prefix}_{user_id} в "
+        print((
+                f"[SQLite3] создана новая таблица {self.db_prefix}_{user_id} в "
                 "базе данных {self.name}"
-            )
-        )
+        ))
 
     async def add_subject_to_user(self, user_id: Any, subject: str, scores: str = "") -> Union[None, int]:
         """
@@ -91,20 +87,16 @@ class AsyncDataBaseConnector:
             else:
                 return 1
         except sqlite3.OperationalError:
-            print(
-                (
-                    "что-то пошло не так с добавлением пользователю"
+            print((
+                    "[SQLite3] что-то пошло не так с добавлением пользователю"
                     f" {user_id} предмета"
-                )
-            )
+            ))
             return 1
         self.conn.commit()
-        print(
-            (
-                f"к пользователю {user_id}"
+        print((
+                f"[SQLite3] к пользователю {user_id}"
                 f" добавлен предмет {subject} и оценки {scores}"
-            )
-        )
+        ))
 
     async def add_scores_to_subject(self, user_id: Any, subject: str, scores: str = "") -> Union[None, int]:
         """
@@ -131,12 +123,10 @@ class AsyncDataBaseConnector:
             )
             '''
         except sqlite3.OperationalError:
-            print(
-                (
-                    "что-то пошло не так с получением пользователя"
+            print((
+                    "[SQLite3] что-то пошло не так с получением пользователя"
                     f" {user_id} предмета {subject}"
-                )
-            )
+            ))
         else:
             if subjects:
                 subjects[1] += scores.lower()
@@ -150,17 +140,14 @@ class AsyncDataBaseConnector:
                 )
             except sqlite3.OperationalError:
                 print((
-                    "что-то пошло не так с обновлением пользователю"
+                    "[SQLite3] что-то пошло не так с обновлением пользователю"
                     f" {user_id} предмета {subject}"
-                    )
-                )
+                ))
             self.conn.commit()
-            print(
-                (
-                    f"данные пользователя {user_id} по предмету "
+            print((
+                    f"[SQLite3] данные пользователя {user_id} по предмету "
                     f"{subject} обновлены"
-                )
-            )
+            ))
 
     async def clean_subject(self, user_id: Any, subject: str) -> None:
         """
@@ -183,12 +170,10 @@ class AsyncDataBaseConnector:
             )
             '''
         except sqlite3.OperationalError:
-            print(
-                (
-                    "что-то пошло не так с получением пользователя"
+            print((
+                    "[SQLite3] что-то пошло не так с получением пользователя"
                     f" {user_id} предмета {subject}"
-                )
-            )
+            ))
         else:
             if subjects:
                 subjects[1] = ""
@@ -202,17 +187,14 @@ class AsyncDataBaseConnector:
                 )
             except sqlite3.OperationalError:
                 print((
-                    "что-то пошло не так с обновлением пользователю"
+                    "[SQLite3] что-то пошло не так с обновлением пользователю"
                     f" {user_id} предмета {subject}"
-                    )
-                )
+                ))
             self.conn.commit()
-            print(
-                (
-                    f"данные пользователя {user_id} по предмету "
+            print((
+                    f"[SQLite3] данные пользователя {user_id} по предмету "
                     f"{subject} обновлены"
-                )
-            )
+            ))
 
     async def clean_all_users_subjects(self, user_id: Any) -> None:
         """
@@ -227,10 +209,9 @@ class AsyncDataBaseConnector:
             )
         except sqlite3.OperationalError:
             print((
-                "что-то пошло не так с удалением данных пользователя"
+                "[SQLite3] что-то пошло не так с удалением данных пользователя"
                 f" {user_id}"
-                )
-            )
+            ))
         self.conn.commit()
 
     async def now_score(self, user_id: Any, subject: str) -> None:
@@ -243,12 +224,10 @@ class AsyncDataBaseConnector:
                 """
             )
         except sqlite3.OperationalError:
-            print(
-                (
-                    "что-то пошло не так с получением пользователя"
+            print((
+                    "[SQLite3] что-то пошло не так с получением пользователя"
                     f" {user_id} предмета {subject}"
-                )
-            )
+            ))
         else:
             if subjects:
                 pass  # тут у меня уже заканчиваются силы над логикой бота Т_Т

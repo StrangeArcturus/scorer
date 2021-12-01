@@ -1,0 +1,7 @@
+.idea
+__pycache__
+test.py
+test.db
+workspace_scorer.code-workspace
+.db
+node_scorer
